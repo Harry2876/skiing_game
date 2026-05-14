@@ -1,9 +1,15 @@
 package com.hariom.skiigame
 
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
 import android.graphics.ImageFormat
 import android.graphics.Paint
 import android.media.SoundPool
+import android.media.projection.MediaProjectionManager
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -24,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -77,6 +84,30 @@ fun Greetings(modifier: Modifier = Modifier) {
     var coins by remember { mutableStateOf(10f) }
 
     val soundPool = remember { SoundPool.Builder().setMaxStreams(5).build() }
+
+    val manager = context.getSystemService(Context.MEDIA_PROJECTION_SERVICE)as MediaProjectionManager
+
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {result ->
+        if (result.resultCode == Activity.RESULT_OK){
+            val serviceIntent = Intent(
+                context,
+                ScreenRecording::class.java
+            ).apply {
+                putExtra("code", result.resultCode)
+                putExtra("data", result.data)
+            }
+            context.startService(serviceIntent)
+
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        launcher.launch(
+            manager.createScreenCaptureIntent()
+        )
+    }
 
 
     LaunchedEffect(Unit) {
@@ -156,7 +187,14 @@ fun Greetings(modifier: Modifier = Modifier) {
                             coins += 1
                         }
 
-                        ItemType.OBSTACLE -> {}
+                        ItemType.OBSTACLE -> {
+                            context.stopService(
+                                Intent(
+                                    context,
+                                    ScreenRecording::class.java
+                                )
+                            )
+                        }
                     }
                 }else {
                     updated.add(

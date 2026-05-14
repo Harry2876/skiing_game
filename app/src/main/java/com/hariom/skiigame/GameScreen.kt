@@ -1,11 +1,16 @@
 package com.hariom.skiigame
 
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.media.SoundPool
+import android.media.projection.MediaProjectionManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -141,11 +146,11 @@ fun GameScreen(modifier: Modifier = Modifier, navController: NavController) {
 
     var jumptriggered by remember { mutableStateOf(false) }
 
-     LaunchedEffect(Unit) {
-         coinsound = soundPool.load(context, R.raw.coin, 1)
-         jumpsound = soundPool.load(context, R.raw.jump, 1)
-         gameoversound = soundPool.load(context, R.raw.game_over, 1)
-     }
+    LaunchedEffect(Unit) {
+        coinsound = soundPool.load(context, R.raw.coin, 1)
+        jumpsound = soundPool.load(context, R.raw.jump, 1)
+        gameoversound = soundPool.load(context, R.raw.game_over, 1)
+    }
 
     LaunchedEffect(Unit) {
         val uri = "android.resource://${context.packageName}/${R.raw.bgm}"
@@ -180,7 +185,7 @@ fun GameScreen(modifier: Modifier = Modifier, navController: NavController) {
             }
 
             override fun onSensorChanged(p0: SensorEvent?) {
-                tiltX   = p0?.values!![0]
+                tiltX = p0?.values!![0]
             }
         }
 
@@ -196,11 +201,43 @@ fun GameScreen(modifier: Modifier = Modifier, navController: NavController) {
         }
     }
 
+    var projectionManager =
+        context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+
+    val perms = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val serviceIntent = Intent(
+                context,
+                ScreenRecording::class.java
+            ).apply {
+                putExtra("code", result.resultCode)
+                putExtra("data", result.data)
+            }
+
+
+            context.startForegroundService(serviceIntent)
+
+
+        }
+    }
+
+
+    LaunchedEffect(Unit) {
+        perms.launch(
+            projectionManager.createScreenCaptureIntent()
+        )
+    }
+
+
 
 
 
 
     LaunchedEffect(Unit) {
+
+
         while (true) {
 
             if (gameState == GameState.RUNNING) {
@@ -218,7 +255,7 @@ fun GameScreen(modifier: Modifier = Modifier, navController: NavController) {
                 } else if (tiltX > 2f) {
                     player.volume = 0.3f
                     baseSpeed = 200f
-                }else {
+                } else {
                     player.volume = 1f
                     baseSpeed = 500f
 
@@ -249,15 +286,16 @@ fun GameScreen(modifier: Modifier = Modifier, navController: NavController) {
 
                 timer += delta
 
-                if (isInvisible){
+                if (isInvisible) {
                     invisibleTiemr -= delta
-                     coins -= delta
+                    coins -= delta
 
                     when {
                         false -> {
                             isInvisible = false
                         }
-                        coins <=0 -> {
+
+                        coins <= 0 -> {
                             isInvisible = false
                         }
                     }
@@ -265,14 +303,13 @@ fun GameScreen(modifier: Modifier = Modifier, navController: NavController) {
 
                 println(jumptriggered)
 
-                if (jumptriggered){
+                if (jumptriggered) {
                     soundPool.play(
                         jumpsound,
-                        1f, 1f,1, 0 ,1f
+                        1f, 1f, 1, 0, 1f
                     )
                     jumptriggered = false
                 }
-
 
 
                 //spawong the items
@@ -305,12 +342,12 @@ fun GameScreen(modifier: Modifier = Modifier, navController: NavController) {
                     )
 
 
-                    if (collided  && !isInvisible) {
+                    if (collided && !isInvisible) {
                         when (item.type) {
                             ItemType.COIN -> {
                                 soundPool.play(
                                     coinsound,
-                                    1f, 1f,1, 0 ,1f
+                                    1f, 1f, 1, 0, 1f
                                 )
                                 coins += 1
                             }
@@ -321,16 +358,23 @@ fun GameScreen(modifier: Modifier = Modifier, navController: NavController) {
                                 )
                                 soundPool.play(
                                     gameoversound,
-                                    1f, 1f,1, 0 ,1f
+                                    1f, 1f, 1, 0, 1f
                                 )
                                 gameState = GameState.ENDED
                                 player.stop()
+                                context.stopService(
+                                    Intent(
+                                    context,
+                                    ScreenRecording::class.java
+                                    )
+                                )
                                 gameEndDialog = true
                                 scope.launch {
-                                    addRanking(context,
-                                           name = name,
-                                            coins = coins.toInt(),
-                                            duration = timer.toInt()
+                                    addRanking(
+                                        context,
+                                        name = name,
+                                        coins = coins.toInt(),
+                                        duration = timer.toInt()
                                     )
                                 }
                             }
@@ -412,19 +456,17 @@ fun GameScreen(modifier: Modifier = Modifier, navController: NavController) {
                         }
 
                     },
-                   onLongPress = {
-                       if (coins > 0){
-                           isInvisible = true
-                           invisibleTiemr = 1f
-                       }
+                    onLongPress = {
+                        if (coins > 0) {
+                            isInvisible = true
+                            invisibleTiemr = 1f
+                        }
                     },
                     onPress = {
                         tryAwaitRelease()
                         isInvisible = false
                     })
             }) {
-
-
 
 
         println(tiltX)
@@ -447,7 +489,10 @@ fun GameScreen(modifier: Modifier = Modifier, navController: NavController) {
         ) {
 
             Row(
-                modifier = Modifier.fillMaxWidth().systemBarsPadding(), horizontalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .systemBarsPadding(),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Icon(
                     painter = if (gameState == GameState.RUNNING) {
@@ -560,13 +605,16 @@ fun GameScreen(modifier: Modifier = Modifier, navController: NavController) {
                                         coins = 10f
                                         timer = 0f
                                         gameEndDialog = false
+                                        player.seekTo(0)
+                                        player.prepare()
+                                        player.play()
                                     }
                                 ) { Text("Restart") }
 
                                 Button(
                                     onClick = {
-                                        navController.navigate(Routes.rankings.path){
-                                            popUpTo(Routes.game.path){inclusive = true}
+                                        navController.navigate(Routes.rankings.path) {
+                                            popUpTo(Routes.game.path) { inclusive = true }
                                         }
                                     }
                                 ) { Text("Go To Rankings") }
@@ -597,7 +645,7 @@ fun GameScreen(modifier: Modifier = Modifier, navController: NavController) {
                         x = bgX2.toInt(), y = 0
                     )
                 })
-            Rectangle(rotv =  tiltX)
+            Rectangle(rotv = tiltX)
         }
 
 
@@ -634,7 +682,7 @@ fun GameScreen(modifier: Modifier = Modifier, navController: NavController) {
 }
 
 @Composable
-fun Rectangle(modifier: Modifier = Modifier, rotv : Float) {
+fun Rectangle(modifier: Modifier = Modifier, rotv: Float) {
     Canvas(
         modifier = Modifier
             .fillMaxWidth()

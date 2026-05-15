@@ -30,12 +30,15 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.referentialEqualityPolicy
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -162,6 +165,14 @@ fun Greetings(modifier: Modifier = Modifier, navController: NavController) {
 
     var itemsPasses by remember { mutableStateOf(0f) }
 
+    var score by remember { mutableStateOf(0f) }
+
+    var level by remember { mutableStateOf(1) }
+
+    var hp by remember { mutableStateOf(0f) }
+
+
+
     LaunchedEffect(Unit){
         val uri = "android.resource://${context.packageName}/${R.raw.bgm}"
 
@@ -222,13 +233,23 @@ fun Greetings(modifier: Modifier = Modifier, navController: NavController) {
                     jumpPressed = false
                 }
 
+                level = (score /50).toInt() + 1
+
+                val upgrade = (level - 1) * 100f
+
+                baseSpeed = 400f + upgrade
+
+                println(baseSpeed)
+
+                var hpUpgrade = (score / 50).toInt()
+
                 //changing the spoeed according to the tikt
                 if (tiltX > 1f) {
-                    baseSpeed = 300f
+                    baseSpeed = 200f
                     musicPlayer.volume = 0.3f
                 } else if (isBoosted) {
                     baseSpeed = 900f
-                } else{ baseSpeed = 600f
+                } else{
                 musicPlayer.volume = 1f}
 
                 //adding the invisible
@@ -306,6 +327,7 @@ fun Greetings(modifier: Modifier = Modifier, navController: NavController) {
                         when (item.type) {
                             ItemType.COINS -> {
                                 coins += 1
+                                score += 10
                                 soundPool.play(
                                     coinscollect, 1f, 1f, 1, 0, 1f
                                 )
@@ -344,7 +366,7 @@ fun Greetings(modifier: Modifier = Modifier, navController: NavController) {
         }
     }
 
-    var dragX by remember { mutableStateOf(0f) }
+    var dragX by remember { mutableFloatStateOf(0f) }
     var dragY by remember { mutableStateOf(0f) }
 
     Box(
@@ -443,6 +465,8 @@ fun Greetings(modifier: Modifier = Modifier, navController: NavController) {
                 Text(coins.toInt().toString())
                 Text(timer.toInt().toString())
                 Text(itemsPasses.toInt().toString())
+                Text(score.toInt().toString())
+                Text("Currernt Level $level")
             }
         }
 
@@ -545,6 +569,7 @@ fun Greetings(modifier: Modifier = Modifier, navController: NavController) {
         }
 
         var jacketColor by remember { mutableStateOf<Color?>(null) }
+
         jacketColor = AppState.jacketColor ?: Color.Transparent
 
             Image(

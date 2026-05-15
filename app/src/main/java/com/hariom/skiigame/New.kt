@@ -78,7 +78,8 @@ enum class ItemType {
 data class Item(
     var x: Float,
     var y: Float,
-    var type: ItemType
+    var type: ItemType,
+    var passed: Boolean = false
 )
 
 enum class GameState {
@@ -158,6 +159,8 @@ fun Greetings(modifier: Modifier = Modifier, navController: NavController) {
     var isInvisible by remember { mutableStateOf(false) }
 
     var name by remember { mutableStateOf("") }
+
+    var itemsPasses by remember { mutableStateOf(0f) }
 
     LaunchedEffect(Unit){
         val uri = "android.resource://${context.packageName}/${R.raw.bgm}"
@@ -270,7 +273,7 @@ fun Greetings(modifier: Modifier = Modifier, navController: NavController) {
                     items = items + Item(
                         x = screenwidth.toFloat(),
                         y = screenheight - 250f,
-                        type = if (Random.nextDouble() < 0.8f) ItemType.COINS else ItemType.OBSTACLES
+                        type = if (Random.nextDouble() < 0.6f) ItemType.COINS else ItemType.OBSTACLES
                     )
                     spawntimer = 0f
                 }
@@ -279,6 +282,14 @@ fun Greetings(modifier: Modifier = Modifier, navController: NavController) {
 
                 items.forEach { item ->
                     val newX = item.x - baseSpeed * delta
+
+
+                    if (item.type == ItemType.OBSTACLES &&
+                        !item.passed &&
+                        newX < screenwidth / 2 - 150){
+                        item.passed = true
+                        itemsPasses++
+                    }
 
                     val collided = checkCollison(
                         playerX = screenwidth / 2 - 150f,
@@ -431,6 +442,7 @@ fun Greetings(modifier: Modifier = Modifier, navController: NavController) {
                 Text(name)
                 Text(coins.toInt().toString())
                 Text(timer.toInt().toString())
+                Text(itemsPasses.toInt().toString())
             }
         }
 

@@ -30,8 +30,4 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable
-fun Greetings(modifier: Modifier = Modifier) {
-    
-}
 

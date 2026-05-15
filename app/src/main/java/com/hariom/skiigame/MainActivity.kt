@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             SkiiGameTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greetings(
+                    MainNav(
                         modifier = Modifier.padding(innerPadding)
                     )
                 }

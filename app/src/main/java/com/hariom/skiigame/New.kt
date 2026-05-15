@@ -44,8 +44,10 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.indirect.IndirectTouchEvent
 import androidx.compose.ui.input.pointer.SuspendingPointerInputModifierNode
 import androidx.compose.ui.input.pointer.pointerInput
@@ -63,6 +65,7 @@ import androidx.core.app.AppLaunchChecker
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 import kotlinx.serialization.descriptors.mapSerialDescriptor
 import kotlin.random.Random
@@ -86,7 +89,7 @@ enum class GameState {
 
 
 @Composable
-fun Greetings(modifier: Modifier = Modifier) {
+fun Greetings(modifier: Modifier = Modifier, navController: NavController) {
 
     val context = LocalContext.current
 
@@ -154,6 +157,8 @@ fun Greetings(modifier: Modifier = Modifier) {
     //adding invincibilyt
     var isInvisible by remember { mutableStateOf(false) }
 
+    var name by remember { mutableStateOf("") }
+
     LaunchedEffect(Unit){
         val uri = "android.resource://${context.packageName}/${R.raw.bgm}"
 
@@ -162,6 +167,10 @@ fun Greetings(modifier: Modifier = Modifier) {
         musicPlayer.prepare()
         musicPlayer.repeatMode = Player.REPEAT_MODE_ALL
         musicPlayer.play()
+    }
+
+    LaunchedEffect(Unit) {
+        name = AppState?.name ?: ""
     }
 
 
@@ -298,6 +307,11 @@ fun Greetings(modifier: Modifier = Modifier) {
                                 gameState = GameState.OVER
                                 musicPlayer.stop()
                                 overcard = true
+                                saveRank(context, rank = Result(
+                                    name = name,
+                                    coins = coins.toInt(),
+                                    duration = timer.toInt()
+                                ))
                             }
                         }
 
@@ -414,7 +428,7 @@ fun Greetings(modifier: Modifier = Modifier) {
                     }
                 ))
             Column {
-                Text("Player name")
+                Text(name)
                 Text(coins.toInt().toString())
                 Text(timer.toInt().toString())
             }
@@ -432,7 +446,9 @@ fun Greetings(modifier: Modifier = Modifier) {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column {
                         Text("The game is in progress. Are you sure to quit?")
-                        Button(onClick = {}) {
+                        Button(onClick = {
+                            navController.navigate(Routes.home.path)
+                        }) {
                             Text("Yes")
                         }
                         Button(onClick = {
@@ -478,7 +494,7 @@ fun Greetings(modifier: Modifier = Modifier) {
                         }
                         Button(
                             onClick = {
-
+                                navController.navigate(Routes.rankings.path)
                             }
                         ) {
                             Text("Go To Rankings")
@@ -516,16 +532,36 @@ fun Greetings(modifier: Modifier = Modifier) {
             Rectangle(tilt = tiltX)
         }
 
-        Image(
-            painter = painterResource(R.drawable.skiing_person), null,
-            modifier = Modifier
-                .size(100.dp)
-                .offset {
-                    IntOffset(
-                        x = screenwidth / 2 - 150,
-                        y = playerY.toInt()
-                    )
-                })
+        var jacketColor by remember { mutableStateOf<Color?>(null) }
+        jacketColor = AppState.jacketColor ?: Color.Transparent
+
+            Image(
+                painter = painterResource(R.drawable.skiing_person), null,
+                modifier = Modifier
+                    .size(100.dp)
+                    .offset {
+                        IntOffset(
+                            x = screenwidth / 2 - 150,
+                            y = playerY.toInt()
+                        )
+                    }
+            )
+            Image(
+                painter = painterResource(R.drawable.skiing_jacket), null,
+                modifier = Modifier
+                    .size(100.dp)
+                    .offset {
+                        IntOffset(
+                            x = screenwidth / 2 - 150,
+                            y = playerY.toInt()
+                        )
+                    },
+                colorFilter = ColorFilter.tint(color = if (isInvisible){
+                    Color.Black
+                }else {
+                    jacketColor!!
+                }, blendMode = BlendMode.SrcAtop)
+            )
 
         items.forEach { item ->
             Image(
@@ -591,12 +627,6 @@ fun checkCollison(
     )
 
     return playerRect.overlaps(itemRect)
-}
-
-@Preview
-@Composable
-private fun ffasd() {
-    Greetings()
 }
 
 

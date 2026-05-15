@@ -403,10 +403,10 @@ fun Greetings(modifier: Modifier = Modifier) {
                 modifier = Modifier.clickable(
                     onClick = {
                          if (gameState == GameState.RUNNING) {
-                            GameState.PAUSED
+                            gameState = GameState.PAUSED
                              musicPlayer.pause()
                         } else {
-                            GameState.RUNNING
+                             gameState =  GameState.RUNNING
                              musicPlayer.play()
                             lastTime = System.currentTimeMillis()
 

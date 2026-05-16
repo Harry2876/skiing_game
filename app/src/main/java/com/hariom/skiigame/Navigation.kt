@@ -23,7 +23,7 @@ fun MainNav(modifier: Modifier = Modifier) {
         startDestination = Routes.home.path
     ) {
         composable(Routes.home.path){HomeScreen(navController = navcontroller)}
-        composable(Routes.game.path){Greetings(navController = navcontroller)}
+        composable(Routes.game.path){GameScreen()}
         composable(Routes.settings.path){SettingsScreen(navController = navcontroller)}
         composable(Routes.rankings.path){RankingsScreen(navController = navcontroller)}
     }
